@@ -16,7 +16,6 @@ This project aims to identify whether a given essay is authored by a human or ge
 ## Tech Stack
 - Programming Language: Python
 - Machine Learning Libraries: Pytorch,Berttokenizer,scikit-learn,adamW.
-- Text Processing Tools: NLTK, SpaCy
 - Data Handling: Pandas, NumPy
 
 ---
