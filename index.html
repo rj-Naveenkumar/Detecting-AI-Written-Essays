@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Text Classifier</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #ff9966, #ff5e62);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .chat-container {
+            width: 60%;
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .heading {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .messages {
+            height: 300px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+
+        .user-message {
+            background: #4caf50;
+            align-self: flex-end;
+        }
+
+        .ai-message {
+            background: #673ab7;
+            align-self: flex-start;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        textarea {
+            flex: 1;
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            font-size: 16px;
+            outline: none;
+            resize: none;
+            background: #f0f0f0;
+            color: black;
+        }
+
+        button {
+            background-color: #ffeb3b;
+            color: black;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #ffc107;
+        }
+
+        .history-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .history-button {
+            background-color: #ff5722;
+        }
+
+        .history {
+            display: none;
+            background: rgba(255, 255, 255, 0.3);
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 300px;
+            overflow-y: auto;
+            max-height: 200px;
+            margin-top: 10px;
+        }
+
+        .feedback {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .feedback-button {
+            background-color: #4caf50;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .feedback-button:hover {
+            background-color: #45a049;
+        }
+
+        .export-options {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .export-button {
+            background-color: #2196f3;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .status-message {
+            margin-top: 20px;
+            color: white;
+            font-size: 16px;
+            text-align: center;
+            background-color: #4caf50;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="history-container">
+        <button class="history-button" onclick="toggleHistory()">View History</button>
+        <button onclick="showExportOptions()">Export History</button>
+        <button onclick="clearHistory()">Clear History</button>
+        <div class="history" id="history"></div>
+        <div class="export-options" id="exportOptions">
+            <button class="export-button" onclick="exportHistory('csv')">Export as CSV</button>
+            <button class="export-button" onclick="exportHistory('pdf')">Export as PDF</button>
+        </div>
+    </div>
+
+    <div class="chat-container">
+        <div class="heading">AI vs Human Text Classifier</div>
+        <div class="messages" id="messages"></div>
+        <div class="input-container">
+            <textarea id="textInput" placeholder="Type a message..."></textarea>
+            <button onclick="classifyText()">Send</button>
+        </div>
+    </div>
+
+    <div id="statusMessage" class="status-message"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        let chatHistory = [];
+
+        function classifyText() {
+            const textInput = document.getElementById("textInput");
+            const text = textInput.value;
+            if (!text.trim()) {
+                return;
+            }
+           
+            const messagesDiv = document.getElementById("messages");
+           
+            const userMessage = document.createElement("div");
+            userMessage.classList.add("message", "user-message");
+            userMessage.innerText = text;
+            messagesDiv.appendChild(userMessage);
+           
+            chatHistory.push({ role: "user", text });
+            localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+ 
+            textInput.value = "";
+           
+            fetch("/", {
+                method: "POST",
+                body: new URLSearchParams({ text }),
+                headers: { "Content-Type": "application/x-www-form-urlencoded" }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const aiMessage = document.createElement("div");
+                aiMessage.classList.add("message", "ai-message");
+                aiMessage.innerText = "Prediction: " + data.result;
+                messagesDiv.appendChild(aiMessage);
+               
+                chatHistory.push({ role: "ai", text: "Prediction: " + data.result });
+                localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+                const feedbackDiv = document.createElement("div");
+                feedbackDiv.classList.add("feedback");
+                const thumbsUpButton = document.createElement("button");
+                thumbsUpButton.innerText = "👍";
+                thumbsUpButton.classList.add("feedback-button");
+                thumbsUpButton.onclick = () => collectFeedback(data.result, 'thumbs up');
+                const thumbsDownButton = document.createElement("button");
+                thumbsDownButton.innerText = "👎";
+                thumbsDownButton.classList.add("feedback-button");
+                thumbsDownButton.onclick = () => collectFeedback(data.result, 'thumbs down');
+                feedbackDiv.appendChild(thumbsUpButton);
+                feedbackDiv.appendChild(thumbsDownButton);
+                aiMessage.appendChild(feedbackDiv);
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function toggleHistory() {
+            const historyDiv = document.getElementById("history");
+            historyDiv.innerHTML = "";
+            if (chatHistory.length === 0) {
+                historyDiv.innerText = "No history available.";
+            } else {
+                chatHistory.forEach(entry => {
+                    const historyItem = document.createElement("p");
+                    historyItem.innerText = (entry.role === "user" ? "User: " : "AI: ") + entry.text;
+                    historyDiv.appendChild(historyItem);
+                });
+            }
+            historyDiv.style.display = historyDiv.style.display === "none" ? "block" : "none";
+        }
+
+        function showExportOptions() {
+            document.getElementById("exportOptions").style.display = 'block';
+        }
+
+        function exportHistory(format) {
+            if (chatHistory.length === 0) {
+                alert("No history to export.");
+                return;
+            }
+
+            if (format === 'csv') {
+                const csvContent = "data:text/csv;charset=utf-8,"
+                    + chatHistory.map(e => e.role + "," + e.text).join("\n");
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "chat_history.csv");
+                link.click();
+            } else if (format === 'pdf') {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                chatHistory.forEach((entry, index) => {
+                    doc.text((entry.role === "user" ? "User: " : "AI: ") + entry.text, 10, 10 + (index * 10));
+                });
+                doc.save("chat_history.pdf");
+            } else {
+                alert("Invalid format. Please choose either CSV or PDF.");
+            }
+        }
+
+        function clearHistory() {
+            chatHistory = [];
+            localStorage.removeItem("chatHistory");
+            document.getElementById("history").innerHTML = "";
+            const statusMessage = document.getElementById("statusMessage");
+            statusMessage.innerText = "History cleared successfully!";
+            
+            // Hide the status message after 5 seconds
+            setTimeout(() => {
+                statusMessage.innerText = "";
+            }, 5000); // Message will disappear after 5 seconds
+        }
+
+        function collectFeedback(prediction, feedback) {
+            const feedbackMessage = { role: "feedback", text: `${prediction}: ${feedback}` };
+            chatHistory.push(feedbackMessage);
+            localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+            console.log(`Feedback for "${prediction}": ${feedback}`);
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const storedHistory = localStorage.getItem("chatHistory");
+            if (storedHistory) {
+                chatHistory = JSON.parse(storedHistory);
+            }
+        });
+    </script>
+</body>
+</html>
