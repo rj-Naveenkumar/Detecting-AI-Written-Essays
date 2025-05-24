@@ -26,7 +26,6 @@ This project is a web application that classifies whether an input essay is writ
 ## Project File
 │
 ├── index.html # Frontend UI   
-
 ├── ap.py # Flask backend
 
 ```
