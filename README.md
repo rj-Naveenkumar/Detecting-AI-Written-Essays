@@ -25,14 +25,11 @@ This project is a web application that classifies whether an input essay is writ
 
 ## Project File
 │
-├── index.html # Frontend UI
+├── index.html # Frontend UI   
+
 ├── ap.py # Flask backend
-│   └──  XLUtility.java      # To provide reusable methods for reading and writing Excel data so that test cases can be executed with dynamic input from an Excel file
+
 ```
----
-
-
----
 
 ##  How It Works
 
